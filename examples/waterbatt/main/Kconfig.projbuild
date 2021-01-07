@@ -1,0 +1,83 @@
+menu "HAP Settings"
+
+    config EXAMPLE_USE_HARDCODED_SETUP_CODE
+        bool "Use hard-coded setup code"
+        default y
+        help
+            HomeKit does not recommend having the setup code programmed in the accessory as is.
+            Instead, it expects setup info (salt-verifier pair) generated for the given setup code.
+            Use this option only for testing purposes. For production, the setup info should be
+            used.
+
+    config EXAMPLE_SETUP_ID
+        string "HomeKit Setup Id"
+        default "ES82"
+        depends on EXAMPLE_USE_HARDCODED_SETUP_CODE
+        help
+            Setup id to be used for HomeKot pairing, if hard-coded setup code is enabled.
+
+    config D_MANIFACTURER
+        string "Device Manifacturer"
+        default "Armo Ltd."
+        help
+            Insert the name of the Device Manifacturer.
+
+    config D_MODEL
+        string "Device Model"
+        default "WaterBatt"
+        help
+            Insert the name of the Device Model.
+            
+    config D_FW
+        string "Device Firmware"
+        default "0.2.0"
+        help
+            Insert the revision of the Device Firmware.
+            
+    config D_HW
+        string "Device Hardware"
+        default "0.1.0"
+        help
+            Insert the revision of the Device Hardware.
+            
+    config BUTTON_GPIO
+        int "Reset Button GPIO number"
+        range 0 16
+        default 0
+        help
+            GPIO number for Reset Button.
+            Some GPIOs are used for other purposes and cannot be used.
+            
+    config CHARGE_GPIO
+        int "Charging status GPIO number"
+        range 0 16
+        default 14
+        help
+            GPIO number for Charging status.
+            Some GPIOs are used for other purposes and cannot be used.
+
+    config TEMP_GPIO
+        int "Temperature sensor GPIO number"
+        range 0 16
+        default 4
+        help
+            GPIO number for Temperature sensor pin.
+            Some GPIOs are used for other purposes and cannot be used.
+
+    config LED_GPIO
+        int "LED GPIO number"
+        range 0 16
+        default 2
+        help
+            GPIO number for LED output.
+            Some GPIOs are used for other purposes and cannot be used.
+            
+    config RELAY_GPIO
+        int "Relay GPIO number"
+        range 0 16
+        default 5
+        help
+            GPIO number for Relay output.
+            Some GPIOs are used for other purposes and cannot be used.
+            
+endmenu
