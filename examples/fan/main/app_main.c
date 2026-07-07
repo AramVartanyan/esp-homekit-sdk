@@ -102,7 +102,7 @@ static int fan_identify(hap_acc_t *ha)
  * An optional HomeKit Event handler which can be used to track HomeKit
  * specific events.
  */
-static void fan_hap_event_handler(void* arg, esp_event_base_t event_base, int event, void *data)
+static void fan_hap_event_handler(void* arg, esp_event_base_t event_base, int32_t event, void *data)
 {
     switch(event) {
         case HAP_EVENT_PAIRING_STARTED :
@@ -129,6 +129,8 @@ static void fan_hap_event_handler(void* arg, esp_event_base_t event_base, int ev
             char *reason = (char *)data;
             ESP_LOGI(TAG, "Accessory Rebooting (Reason: %s)",  reason ? reason : "null");
             break;
+        case HAP_EVENT_PAIRING_MODE_TIMED_OUT :
+            ESP_LOGI(TAG, "Pairing Mode timed out. Please reboot the device.");
         }
         default:
             /* Silently ignore unknown events */
@@ -167,8 +169,9 @@ static int fan_read(hap_char_t *hc, hap_status_t *status_code, void *serv_priv, 
     return HAP_SUCCESS;
 }
 
-/* A dummy callback for handling a write on the "On" characteristic of Fan.
- * In an actual accessory, this should control the hardware
+
+/* A dummy callback for handling a write on the Fan service
+ * In an actual accessory, this should also control the hardware.
  */
 static int fan_write(hap_write_data_t write_data[], int count,
         void *serv_priv, void *write_priv)
@@ -181,9 +184,8 @@ static int fan_write(hap_write_data_t write_data[], int count,
     hap_write_data_t *write;
     for (i = 0; i < count; i++) {
         write = &write_data[i];
-        if (!strcmp(hap_char_get_type_uuid(write->hc), HAP_CHAR_UUID_ON)) {
-            ESP_LOGI(TAG, "Received Write. Fan %s", write->val.b ? "On" : "Off");
-            /* TODO: Control Actual Hardware */
+        if (!strcmp(hap_char_get_type_uuid(write->hc), HAP_CHAR_UUID_ACTIVE)) {
+            ESP_LOGI(TAG, "Received Write. Fan %s",write->val.b ? "Active" : "Inactive");
             hap_char_update_val(write->hc, &(write->val));
             *(write->status) = HAP_STATUS_SUCCESS;
         } else if (!strcmp(hap_char_get_type_uuid(write->hc), HAP_CHAR_UUID_ROTATION_DIRECTION)) {
@@ -240,8 +242,11 @@ static void fan_thread_entry(void *p)
     uint8_t product_data[] = {'E','S','P','3','2','H','A','P'};
     hap_acc_add_product_data(accessory, product_data, sizeof(product_data));
 
+    /* Add Wi-Fi Transport service required for HAP Spec R16 */
+    hap_acc_add_wifi_transport_service(accessory, 0);
+
     /* Create the Fan Service. Include the "name" since this is a user visible service  */
-    service = hap_serv_fan_create(false);
+    service = hap_serv_fan_v2_create(1);
     hap_serv_add_char(service, hap_char_name_create("My Fan"));
     hap_serv_add_char(service, hap_char_rotation_direction_create(0));
 

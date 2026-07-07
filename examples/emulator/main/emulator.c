@@ -3,6 +3,7 @@
 #include <hap_apple_chars.h>
 #include <string.h>
 #include "emulator.h"
+#include <inttypes.h>
 #include "nvs.h"
 
 int hap_factory_keystore_set(const char *name_space, const char *key, const uint8_t *val, size_t val_size);
@@ -61,7 +62,7 @@ static int hex_compare(unsigned char *buf, int buf_len)
     return -1;
 }
 
-/* Char: Target Door State with tw(Timed Write) & aa(Addtional Authorization) */
+/* Char: Target Door State with tw(Timed Write) & aa(Additional Authorization) */
 static hap_char_t *hap_char_target_door_state_create_with_tw_aa(uint8_t targ_door_state)
 {
     hap_char_t *hc = hap_char_uint8_create(HAP_CHAR_UUID_TARGET_DOOR_STATE,
@@ -100,7 +101,7 @@ err:
 /* Services Emulation Block */
 static hap_serv_t *hap_fan_create()
 {
-    hap_serv_t *hs = hap_serv_fan_create(false);
+    hap_serv_t *hs = hap_serv_fan_v2_create(1);
     hap_serv_add_char(hs, hap_char_rotation_direction_create(0));
     return hs;
 }
@@ -450,13 +451,13 @@ int emulator_write(hap_write_data_t write_data[], int count,
 static void emulator_print_char(hap_char_t *hc)
 {
     const hap_val_t *cval = hap_char_get_val(hc);
-    printf("C %d %s %s\n", hap_char_get_iid(hc),
+    printf("C %" PRId32 " %s %s\n", hap_char_get_iid(hc),
             hap_char_get_type_uuid(hc), emulator_print_value(hc, cval));
 }
 
 static void emulator_print_serv(hap_serv_t *hs)
 {
-    printf("S %d %s\n", hap_serv_get_iid(hs), hap_serv_get_type_uuid(hs));
+    printf("S %" PRId32 " %s\n", hap_serv_get_iid(hs), hap_serv_get_type_uuid(hs));
     hap_char_t *hc;
     for (hc = hap_serv_get_first_char(hs); hc; hc = hap_char_get_next(hc)) {
         emulator_print_char(hc);
@@ -465,7 +466,7 @@ static void emulator_print_serv(hap_serv_t *hs)
 
 static void emulator_print_acc(hap_acc_t *ha)
 {
-    printf("A %d\n", hap_acc_get_aid(ha));
+    printf("A %" PRId32 "\n", hap_acc_get_aid(ha));
     hap_serv_t *hs;
     for (hs = hap_acc_get_first_serv(ha); hs; hs = hap_serv_get_next(hs)) {
         emulator_print_serv(hs);

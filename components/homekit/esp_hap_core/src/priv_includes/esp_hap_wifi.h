@@ -23,8 +23,12 @@
  */
 #ifndef _HAP_WIFI_H_
 #define _HAP_WIFI_H_
+#include <esp_wifi_types.h>
 #include <hap.h>
 bool hap_is_network_configured();
 void hap_wifi_restart();
 void hap_erase_network_info();
+esp_err_t hap_wifi_sta_switch(wifi_config_t *config);
+esp_err_t hap_wifi_config_sta_connect(void);
+esp_err_t hap_wifi_config_revert_network(void);
 #endif /* _HAP_WIFI_H_ */

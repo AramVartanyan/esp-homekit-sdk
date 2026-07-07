@@ -160,7 +160,7 @@ static void app_wac_sta_connect(wifi_config_t *wifi_cfg)
 
 /* Event handler for catching system events */
 static void event_handler(void* arg, esp_event_base_t event_base,
-                          int event_id, void* event_data)
+                          int32_t event_id, void* event_data)
 {
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
         esp_wifi_connect();
@@ -280,7 +280,7 @@ esp_err_t app_wifi_start(TickType_t ticks_to_wait)
             .ssid = APP_WIFI_SSID,
             .password = APP_WIFI_PASS,
             /* Setting a password implies station will connect to all security modes including WEP/WPA.
-             * However these modes are deprecated and not advisable to be used. Incase your Access point
+             * However these modes are deprecated and not advisable to be used. In case your Access point
              * doesn't support WPA2, these mode can be enabled by commenting below line */
 	     .threshold.authmode = WIFI_AUTH_WPA2_PSK,
 

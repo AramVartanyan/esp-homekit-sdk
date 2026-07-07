@@ -29,6 +29,7 @@
 #include <hap.h>
 #include <hap_fw_upgrade.h>
 #include <esp_https_ota.h>
+#include <esp_idf_version.h>
 
 #define FW_UPG_TASK_PRIORITY    1
 #define FW_UPG_STACKSIZE        6 * 1024
@@ -59,7 +60,15 @@ static void fw_upgrade_thread_entry(void *data)
     fw_upgrade_status = FW_UPG_STATUS_UPGRADING;
     hap_val_t val = {.i = fw_upgrade_status};
     hap_char_update_val(fw_upgrade_status_char, &val);
-    int ret = esp_https_ota(client_config);
+    esp_err_t ret;
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+    esp_https_ota_config_t ota_config = {
+        .http_config = client_config,
+    };
+    ret = esp_https_ota(&ota_config);
+#else
+    ret = esp_https_ota(client_config);
+#endif
     if (ret == ESP_OK) {
         ESP_LOGI(TAG, "FW Upgrade Successful");
         fw_upgrade_status = FW_UPG_STATUS_SUCCESS;
@@ -80,7 +89,7 @@ static void fw_upgrade_thread_entry(void *data)
         hap_reboot_accessory();
     }
     /* Updating the value of the variable here, so that the next upgrade attempt (if any) can start.
-     * However, no need to update the value, as we want to retain the lates status for 
+     * However, no need to update the value, as we want to retain the latest status for 
      * controllers to read.
      */
     fw_upgrade_status = FW_UPG_STATUS_IDLE;

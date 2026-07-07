@@ -27,7 +27,6 @@
 #include <freertos/task.h>
 #include <freertos/queue.h>
 #include <esp_event.h>
-#include <esp_wifi.h>
 
 #include <esp_mfi_debug.h>
 #include <esp_hap_acc.h>
@@ -142,6 +141,28 @@ static void hap_common_sm(hap_internal_event_t event)
  */
             hap_http_send_notif();
             return;
+        case HAP_INTERNAL_EVENT_NETWORK_SWITCH:
+            ESP_MFI_DEBUG(ESP_MFI_DEBUG_INFO, "Taking the network down");
+            /* wait for some time, close all the active sessions and then
+             * erase network info.
+             */
+            vTaskDelay(2000 / hap_platform_os_get_msec_per_tick());
+            hap_close_all_sessions();
+            hap_mdns_deannounce();
+            vTaskDelay(1000 / hap_platform_os_get_msec_per_tick());
+            hap_wifi_config_sta_connect();
+            return;
+        case HAP_INTERNAL_EVENT_NETWORK_REVERT:
+            ESP_MFI_DEBUG(ESP_MFI_DEBUG_INFO, "Taking the network down");
+            /* wait for some time, close all the active sessions and then
+             * erase network info.
+             */
+            vTaskDelay(2000 / hap_platform_os_get_msec_per_tick());
+            hap_close_all_sessions();
+            hap_mdns_deannounce();
+            vTaskDelay(1000 / hap_platform_os_get_msec_per_tick());
+            hap_wifi_config_revert_network();
+            return;
         default:
             return;
         }
@@ -173,6 +194,7 @@ static void hap_loop_task(void *param)
     }
     vQueueDelete(xQueue);
     xQueue = NULL;
+    ESP_MFI_DEBUG(ESP_MFI_DEBUG_INFO, "HAP Main Loop Stopped");
     vTaskDelete(NULL);
 }
 
@@ -292,8 +314,23 @@ int hap_reset_network()
     return hap_send_event(HAP_INTERNAL_EVENT_RESET_NETWORK);
 }
 
+int hap_trigger_network_switch(void)
+{
+    return hap_send_event(HAP_INTERNAL_EVENT_NETWORK_SWITCH);
+}
+
+int hap_trigger_network_revert(void)
+{
+    return hap_send_event(HAP_INTERNAL_EVENT_NETWORK_REVERT);
+}
+
+static bool hap_started;
 int hap_start(void)
 {
+    if (hap_started) {
+        ESP_MFI_DEBUG(ESP_MFI_DEBUG_WARN, "HAP already started");
+        return HAP_SUCCESS;
+    }
     int ret = 0;
 #ifdef CONFIG_HAP_MFI_ENABLE
     if (hap_priv.auth_type == HAP_MFI_AUTH_HW) {
@@ -347,13 +384,25 @@ int hap_start(void)
         ESP_MFI_DEBUG(ESP_MFI_DEBUG_ERR, "HAP IP Services Start Failed [%d]", ret);
         return ret;
     }
+    ESP_MFI_DEBUG(ESP_MFI_DEBUG_INFO, "HAP Started");
+    hap_started = true;
     return HAP_SUCCESS;
 }
 
 int hap_stop(void)
 {
     int ret = HAP_SUCCESS;
-    //todo
+    if (!hap_started) {
+        ESP_MFI_DEBUG(ESP_MFI_DEBUG_WARN, "HAP is already stopped");
+        return ret;
+    }
+    hap_ip_services_stop();
+    hap_mdns_deinit();
+    hap_loop_stop();
+    hap_event_queue_deinit();
+    hap_httpd_stop();
+    hap_started = false;
+    ESP_MFI_DEBUG(ESP_MFI_DEBUG_INFO, "HAP Stopped");
     return ret;
 }
 

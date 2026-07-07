@@ -49,7 +49,7 @@ static const char *TAG = "HAP outlet";
 
 #define ESP_INTR_FLAG_DEFAULT 0
 
-static xQueueHandle s_esp_evt_queue = NULL;
+static QueueHandle_t s_esp_evt_queue = NULL;
 /**
  * @brief the recover outlet in use gpio interrupt function
  */
@@ -85,7 +85,7 @@ static void outlet_in_use_key_init(uint32_t key_gpio_pin)
 }
 
 /**
- * Initialize the Smart Outlet Hardware.Here, we just enebale the Outlet-In-Use detection.
+ * Initialize the Smart Outlet Hardware.Here, we just enable the Outlet-In-Use detection.
  */
 void smart_outlet_hardware_init(gpio_num_t gpio_num)
 {
@@ -156,6 +156,9 @@ static void smart_outlet_thread_entry(void *p)
     /* Add a dummy Product Data */
     uint8_t product_data[] = {'E','S','P','3','2','H','A','P'};
     hap_acc_add_product_data(accessory, product_data, sizeof(product_data));
+
+    /* Add Wi-Fi Transport service required for HAP Spec R16 */
+    hap_acc_add_wifi_transport_service(accessory, 0);
 
     /* Create the Outlet Service. Include the "name" since this is a user visible service  */
     service = hap_serv_outlet_create(false, false);

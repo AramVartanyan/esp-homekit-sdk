@@ -35,6 +35,7 @@
 #include <esp_hap_keystore.h>
 #include <esp_hap_database.h>
 #include <esp_hap_controllers.h>
+#include <esp_hap_pair_setup.h>
 
 #include <esp_mfi_base64.h>
 
@@ -216,7 +217,7 @@ static void hap_check_fw_version()
             hap_increment_and_save_config_num();
         }
     }
-    /* Save the new firmare revision to NVS */
+    /* Save the new firmware revision to NVS */
     hap_keystore_set(HAP_KEYSTORE_NAMESPACE_HAPMAIN, HAP_KEY_FW_REV,
             (uint8_t *)hap_priv.primary_acc.fw_rev,
             strlen(hap_priv.primary_acc.fw_rev));

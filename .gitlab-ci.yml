@@ -1,23 +1,31 @@
 stages:
+  - check
   - build
 
-build_homekit_examples:
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+  ESP_DOCS_ENV_IMAGE: python:3.12-alpine
+
+.build_template:
   stage: build
-  image: $CI_DOCKER_REGISTRY/esp32-ci-env
+  image: espressif/idf:latest
   tags:
     - build
 
   variables:
-    IDF_PATH: "$CI_PROJECT_DIR/esp-idf"
-    GIT_STRATEGY: clone
-    
+    EXAMPLES: "bridge data_tlv8 emulator fan lightbulb smart_outlet"
+    EXAMPLE_TARGETS: "esp32 esp32c3 esp32s2 esp32s3 esp32c2 esp32c6"
+
   artifacts:
     paths:
       - examples/fan/build/*.bin
       - examples/fan/build/*.elf
       - examples/fan/build/*.map
       - examples/fan/build/bootloader/*.bin
-    expire_in: 6 mos
+  artifacts:
+    paths:
+      - $CI_PROJECT_DIR/esp-homekit-sdk-bins-${CI_JOB_ID}.zip
+    expire_in: 3 mos
 
   before_script:
     - mkdir -p ~/.ssh
@@ -28,65 +36,44 @@ build_homekit_examples:
     - echo -e "Host gitlab.espressif.cn\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
 
   script:
-    - git submodule update --init --recursive
-    # Cloning esp-idf
-    - git clone -b release/v4.2 --recursive --depth 1 https://github.com/espressif/esp-idf.git
-    - cd esp-idf
-    - ./install.sh
-    - . export.sh
+    - for EXAMPLE in $EXAMPLES; do
+    - cd $CI_PROJECT_DIR/examples/$EXAMPLE
+    - echo Building $EXAMPLE
+    - for TARGET in $EXAMPLE_TARGETS; do
+    - echo Building for $TARGET
+    - idf.py set-target $TARGET
+    - idf.py build
+    - mkdir -p $CI_PROJECT_DIR/esp-homekit-sdk-bins-${CI_JOB_ID}/$EXAMPLE/$TARGET/
+    - cp $CI_PROJECT_DIR/examples/$EXAMPLE/build/*.bin $CI_PROJECT_DIR/esp-homekit-sdk-bins-${CI_JOB_ID}/$EXAMPLE/$TARGET/
+    - done
+    - echo Build Complete for $EXAMPLE
+    - done
+    # Generating zip file for binaries generated
+    - cd $CI_PROJECT_DIR
+    - echo Generating zip file for binaries generated
+    - tar -zcvf esp-homekit-sdk-bins-${CI_JOB_ID}.zip esp-homekit-sdk-bins-${CI_JOB_ID}/
 
-    - cd ../examples/fan
-    - idf.py build
-    - cd ../bridge
-    - idf.py build
-    - cd ../lightbulb
-    - idf.py build
-    - cd ../smart_outlet
-    - idf.py build
-    - cd ../data_tlv8
-    - idf.py build
-    - cd ../aws-iot
-    - mkdir components
-    - cd components
-    - git clone --depth 1 --single-branch --recursive https://github.com/espressif/esp-aws-iot.git
-    - export AWS_IOT_PATH=$PWD/esp-aws-iot
-    - cd ..
-    - touch main/certs/device.crt main/certs/device.key
-    - idf.py build
-    - cd ../emulator
-    - idf.py build
-    - cd ../ethernet_bridge
-    - idf.py build
-    - cd ../fan
-    - rm -rf build sdkconfig sdkconfig.old
-    - make defconfig
-    - make -j4
-    - cd ../bridge
-    - rm -rf build sdkconfig sdkconfig.old
-    - make defconfig
-    - make -j4
-    - cd ../lightbulb
-    - rm -rf build sdkconfig sdkconfig.old
-    - make defconfig
-    - make -j4
-    - cd ../smart_outlet
-    - rm -rf build sdkconfig sdkconfig.old
-    - make defconfig
-    - make -j4
-    - cd ../data_tlv8
-    - rm -rf build sdkconfig sdkconfig.old
-    - make defconfig
-    - make -j4
-    - cd ../aws-iot
-    - rm -rf build sdkconfig sdkconfig.old
-    - touch main/certs/device.crt main/certs/device.key
-    - make defconfig
-    - make -j4
-    - cd ../emulator
-    - rm -rf build sdkconfig sdkconfig.old
-    - make defconfig
-    - make -j4
-    - cd ../ethernet_bridge
-    - rm -rf build sdkconfig sdkconfig.old
-    - make defconfig
-    - make -j4
+build_idf_v5.1:
+  extends: .build_template
+  image: espressif/idf:release-v5.1
+
+build_idf_v5.2:
+  extends: .build_template
+  image: espressif/idf:release-v5.2
+
+build_idf_v5.3:
+  extends: .build_template
+  image: espressif/idf:release-v5.3
+
+build_idf_v5.4:
+  extends: .build_template
+  image: espressif/idf:release-v5.4
+
+build_idf_v5.5:
+  extends: .build_template
+  image: espressif/idf:release-v5.5
+  variables:
+    EXAMPLE_TARGETS: "esp32 esp32s2 esp32c3 esp32s3 esp32c2 esp32c6 esp32c5"
+
+include:
+  - '.gitlab/ci/pre_commit.yml'

@@ -125,7 +125,7 @@ void emulator_hap_event_handler(hap_event_t event, void *data)
     }
 }
 
-static void hap_emulator_system_event_handler(void* arg, esp_event_base_t event_base, int event_id, void* event_data)
+static void hap_emulator_system_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
 {
     if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
@@ -188,6 +188,9 @@ static void emulator_thread_entry(void *p)
     /* Add a dummy Product Data */
     uint8_t product_data[] = {'E','S','P','3','2','H','A','P'};
     hap_acc_add_product_data(accessory, product_data, sizeof(product_data));
+
+    /* Add Wi-Fi Transport service required for HAP Spec R16 */
+    hap_acc_add_wifi_transport_service(accessory, 0);
 
     /* Create the appropriate Service. Include the "name" since this is a user visible service  */
     service = profile->serv_create();
@@ -304,7 +307,7 @@ static void emulator_thread_entry(void *p)
             hap_char_update_val(hap_serv_get_char_by_uuid(hs, HAP_CHAR_UUID_ON), &val);    
     }
     
-    /* Registering BCT handlers as this is a test accesory */
+    /* Registering BCT handlers as this is a test accessory */
     hap_bct_register_http_handlers();
 
     emulator_show_profiles();

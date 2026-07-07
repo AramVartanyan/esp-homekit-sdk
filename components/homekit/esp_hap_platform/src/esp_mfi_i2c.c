@@ -25,14 +25,23 @@
 #include <stdio.h>
 #include <sys/errno.h>
 #include <sdkconfig.h>
-#ifdef CONFIG_IDF_TARGET_ESP32S2
-#include "esp32s2/rom/ets_sys.h"
-#else
-#ifdef CONFIG_IDF_TARGET_ESP32C3
-#include "esp32c3/rom/ets_sys.h"
-#else
+
+#if CONFIG_IDF_TARGET_ESP32
 #include "esp32/rom/ets_sys.h"
-#endif
+#elif CONFIG_IDF_TARGET_ESP32S2
+#include "esp32s2/rom/ets_sys.h"
+#elif CONFIG_IDF_TARGET_ESP32S3
+#include "esp32s3/rom/ets_sys.h"
+#elif CONFIG_IDF_TARGET_ESP32C3
+#include "esp32c3/rom/ets_sys.h"
+#elif CONFIG_IDF_TARGET_ESP32C2
+#include "esp32c2/rom/ets_sys.h"
+#elif CONFIG_IDF_TARGET_ESP32C6
+#include "esp32c6/rom/ets_sys.h"
+#elif CONFIG_IDF_TARGET_ESP32C5
+#include "esp32c5/rom/ets_sys.h"
+#else
+#error "please include ets_sys.h"
 #endif
 
 #ifdef CONFIG_I2C_SOFTWARE
@@ -133,7 +142,7 @@ int esp_mfi_i2c_write(uint8_t slvaddr, uint8_t regaddr, uint8_t *buff, uint32_t 
         i2c_master_write(cmd, buff, len, ACK_CHECK_EN);
 
         i2c_master_stop(cmd);
-        ret = i2c_master_cmd_begin(I2C_MASTER_NUM, cmd, I2C_MASTER_TICKS_TIMES / portTICK_RATE_MS);
+        ret = i2c_master_cmd_begin(I2C_MASTER_NUM, cmd, I2C_MASTER_TICKS_TIMES / portTICK_PERIOD_MS);
         i ++;
         i2c_cmd_link_delete(cmd);
         ets_delay_us(I2C_MASTER_RETRY_TIMES);
@@ -172,7 +181,7 @@ int esp_mfi_i2c_read(uint8_t slvaddr, uint8_t regaddr, uint8_t *buff, uint32_t l
             i2c_master_write_byte(cmd, regaddr, ACK_CHECK_EN);
 
             i2c_master_stop(cmd);
-            ret = i2c_master_cmd_begin(I2C_MASTER_NUM, cmd, I2C_MASTER_TICKS_TIMES / portTICK_RATE_MS);
+            ret = i2c_master_cmd_begin(I2C_MASTER_NUM, cmd, I2C_MASTER_TICKS_TIMES / portTICK_PERIOD_MS);
             i2c_cmd_link_delete(cmd);
             if (ret == ESP_OK) {
                 break;
@@ -195,7 +204,7 @@ int esp_mfi_i2c_read(uint8_t slvaddr, uint8_t regaddr, uint8_t *buff, uint32_t l
         }
 
         i2c_master_stop(cmd);
-        ret = i2c_master_cmd_begin(I2C_MASTER_NUM, cmd, I2C_MASTER_TICKS_TIMES / portTICK_RATE_MS);
+        ret = i2c_master_cmd_begin(I2C_MASTER_NUM, cmd, I2C_MASTER_TICKS_TIMES / portTICK_PERIOD_MS);
         i ++;
         i2c_cmd_link_delete(cmd);
     } while (ret != ESP_OK && i < I2C_MASTER_MAX_RETRY);
