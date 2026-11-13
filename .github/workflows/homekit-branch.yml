@@ -1,0 +1,31 @@
+# Keeps the branch "homekit" equal to the folder components/homekit of master, with its
+# history (git subtree split): the branch has the HomeKit components at its root, so a
+# project can take it as a git submodule at components/homekit. Runs after every change of
+# master that touches components/homekit (also after "Sync fork") and on demand.
+# Do not commit to "homekit" by hand: it is regenerated from master.
+name: Update the homekit branch
+
+on:
+  push:
+    branches: [master]
+    paths: ['components/homekit/**', '.github/workflows/homekit-branch.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: homekit-branch
+  cancel-in-progress: false
+
+jobs:
+  split:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # the whole history: git subtree split needs it
+      - name: Split components/homekit into the homekit branch
+        run: |
+          git subtree split --prefix=components/homekit -b homekit
+          git push origin homekit
