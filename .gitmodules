@@ -2,3 +2,11 @@
 	path = examples/common/esp_aht
 	url = https://github.com/AramVartanyan/esp_aht
 	branch = main
+[submodule "examples/common/fupdateota"]
+	path = examples/common/fupdateota
+	url = https://github.com/AramVartanyan/fupdateota
+	branch = main
+[submodule "examples/common/outputwrite"]
+	path = examples/common/outputwrite
+	url = https://github.com/AramVartanyan/outputwrite
+	branch = main
