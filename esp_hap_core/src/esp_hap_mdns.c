@@ -68,7 +68,7 @@ int hap_mdns_init()
     if (!mdns_init_done) {
         ret = mdns_init();
         if (ret == ESP_OK) {
-            mdns_hostname_set("MyHost");
+            mdns_hostname_set(CONFIG_LWIP_LOCAL_HOSTNAME);
             mdns_init_done = true;
             ESP_MFI_DEBUG(ESP_MFI_DEBUG_INFO, "mDNS initialised");
             return HAP_SUCCESS;
