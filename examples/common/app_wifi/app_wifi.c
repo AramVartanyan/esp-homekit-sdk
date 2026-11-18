@@ -30,6 +30,7 @@
 #include <esp_event.h>
 #include <esp_log.h>
 #include <esp_idf_version.h>
+
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0)
 // Features supported in 4.1+
 #define ESP_NETIF_SUPPORTED
@@ -78,7 +79,6 @@ static const char *TAG = "app_wifi";
 static const int WIFI_CONNECTED_EVENT = BIT0;
 static EventGroupHandle_t wifi_event_group;
 
-
 #ifdef USE_UNIFIED_PROVISIONING
 #define PROV_QR_VERSION "v1"
 
@@ -125,7 +125,8 @@ static esp_err_t get_device_pop(char *pop, size_t max)
         uint8_t eth_mac[6];
         esp_err_t err = esp_wifi_get_mac(WIFI_IF_STA, eth_mac);
         if (err == ESP_OK) {
-            snprintf(pop, max, "%02x%02x%02x%02x", eth_mac[2], eth_mac[3], eth_mac[4], eth_mac[5]);
+            //snprintf(pop, max, "%02x%02x%02x%02x", eth_mac[2], eth_mac[3], eth_mac[4], eth_mac[5]);
+            snprintf(pop, max, "abcd1234");
             return ESP_OK;
         } else {
             return err;
@@ -175,11 +176,15 @@ static void event_handler(void* arg, esp_event_base_t event_base,
         ESP_LOGI(TAG, "Connected with IP Address:" IPSTR, IP2STR(&event->ip_info.ip));
         /* Signal main application to continue execution */
         xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_EVENT);
+        ESP_LOGI(TAG, "LED indicator - status CONNECTED");
+        TakeStatusConnected(true);
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_GOT_IP6) {
         ip_event_got_ip6_t *event = (ip_event_got_ip6_t *)event_data;
         ESP_LOGI(TAG, "Connected with IPv6 Address:" IPV6STR, IPV62STR(event->ip6_info.ip));
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        ESP_LOGI(TAG, "Disconnected. Connecting to the AP again...");
+        //ESP_LOGI(TAG, "Disconnected. Connecting to the AP again...");
+        ESP_LOGI(TAG, "LED indicator - status DISCONNECTED");
+        TakeStatusConnected(false);
         esp_wifi_connect();
 #ifdef USE_UNIFIED_PROVISIONING
     } else if (event_base == WIFI_PROV_EVENT) {
@@ -239,7 +244,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
     }
 }
 
-void app_wifi_init(void)
+void app_wifi_init(const char *hostname)
 {
     /* Initialize TCP/IP */
 #ifdef ESP_NETIF_SUPPORTED
@@ -247,14 +252,18 @@ void app_wifi_init(void)
 #else
     tcpip_adapter_init();
 #endif
-
+    
     /* Initialize the event loop */
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     wifi_event_group = xEventGroupCreate();
-
+    
     /* Initialize Wi-Fi including netif with default config */
 #ifdef ESP_NETIF_SUPPORTED
     esp_netif_t *wifi_netif = esp_netif_create_default_wifi_sta();
+    //set hostname
+    if (hostname) {
+        ESP_ERROR_CHECK(esp_netif_set_hostname(wifi_netif, hostname));
+    }
 #endif
 
     /* Register our event handler for Wi-Fi, IP and Provisioning related events */
@@ -280,10 +289,10 @@ esp_err_t app_wifi_start(TickType_t ticks_to_wait)
             .ssid = APP_WIFI_SSID,
             .password = APP_WIFI_PASS,
             /* Setting a password implies station will connect to all security modes including WEP/WPA.
-             * However these modes are deprecated and not advisable to be used. In case your Access point
+             * However these modes are deprecated and not advisable to be used. Incase your Access point
              * doesn't support WPA2, these mode can be enabled by commenting below line */
-	     .threshold.authmode = WIFI_AUTH_WPA2_PSK,
-
+            .threshold.authmode = WIFI_AUTH_WPA2_PSK,
+            
             .pmf_cfg = {
                 .capable = true,
                 .required = false
