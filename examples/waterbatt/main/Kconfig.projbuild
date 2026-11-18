@@ -1,48 +1,55 @@
-menu "HAP Settings"
+menu "Device Settings"
 
-    config EXAMPLE_USE_HARDCODED_SETUP_CODE
+    config USE_HARDCODED_SETUP_CODE
         bool "Use hard-coded setup code"
-        default y
+        default n
         help
             HomeKit does not recommend having the setup code programmed in the accessory as is.
             Instead, it expects setup info (salt-verifier pair) generated for the given setup code.
             Use this option only for testing purposes. For production, the setup info should be
             used.
-
-    config EXAMPLE_SETUP_ID
-        string "HomeKit Setup Id"
-        default "ES82"
-        depends on EXAMPLE_USE_HARDCODED_SETUP_CODE
+            
+    config SETUP_CODE
+        string "HomeKit Setup Code"
+        default "111-22-333"
+        depends on USE_HARDCODED_SETUP_CODE
         help
-            Setup id to be used for HomeKot pairing, if hard-coded setup code is enabled.
+            Setup code to be used for HomeKit pairing, if hard-coded setup code is enabled.
 
-    config D_MANIFACTURER
+    config SETUP_ID
+        string "HomeKit Setup Id"
+        default "ES32"
+        depends on USE_HARDCODED_SETUP_CODE
+        help
+            Setup id to be used for HomeKit pairing, if hard-coded setup code is enabled.
+
+    config MANIFACTURER
         string "Device Manifacturer"
         default "Armo Ltd."
         help
             Insert the name of the Device Manifacturer.
+       
+    config NAME
+        string "Device Name"
+        default "WaterBat-%02X%02X%02X"
+        help
+            Insert the name of the Device.
 
-    config D_MODEL
+    config MODEL
         string "Device Model"
-        default "WaterBatt"
+        default "Valve on Solar"
         help
             Insert the name of the Device Model.
             
-    config D_FW
-        string "Device Firmware"
-        default "0.2.0"
-        help
-            Insert the revision of the Device Firmware.
-            
-    config D_HW
+    config HW
         string "Device Hardware"
-        default "0.1.0"
+        default "0.1.3"
         help
             Insert the revision of the Device Hardware.
             
     config BUTTON_GPIO
         int "Reset Button GPIO number"
-        range 0 16
+        range 0 46
         default 0
         help
             GPIO number for Reset Button.
@@ -50,34 +57,61 @@ menu "HAP Settings"
             
     config CHARGE_GPIO
         int "Charging status GPIO number"
-        range 0 16
-        default 14
+        range 0 46
+        default 7
         help
             GPIO number for Charging status.
             Some GPIOs are used for other purposes and cannot be used.
 
-    config TEMP_GPIO
-        int "Temperature sensor GPIO number"
-        range 0 16
-        default 4
-        help
-            GPIO number for Temperature sensor pin.
-            Some GPIOs are used for other purposes and cannot be used.
-
     config LED_GPIO
         int "LED GPIO number"
-        range 0 16
-        default 2
+        range 0 46
+        default 15
         help
             GPIO number for LED output.
             Some GPIOs are used for other purposes and cannot be used.
             
     config RELAY_GPIO
         int "Relay GPIO number"
-        range 0 16
-        default 5
+        range 0 46
+        default 35
         help
             GPIO number for Relay output.
             Some GPIOs are used for other purposes and cannot be used.
+
+    config ADC_UNIT
+        int "ADC Unit selection"
+        range 0 1
+        default 0
+        help
+            0 = ADC_UNIT_1
+            1 = ADC_UNIT_2
+            Note: On ESP32C3, ADC2 is no longer supported, due to its HW limitation.
+
+    config ADC_CHANNEL
+        int "ADC Channel"
+        range 0 9
+        default 3
+        help
+            0 = ADC_CHANNEL_0
+            1 = ADC_CHANNEL_1
+            ...
+            9 = ADC_CHANNEL_9
+            ESP32 -> ADC1 8 channels: GPIO32 - GPIO39 and
+            ADC2 10 channels: GPIO0, GPIO2, GPIO4, GPIO12 - GPIO15, GOIO25 - GPIO27
+            ESP32-S2 -> ADC1 10 channels: GPIO1 - GPIO10 and ADC2 10 channels: GPIO11 - GPIO20
+            ESP32-S2 -> ADC1 10 channels: GPIO1 - GPIO10 and ADC2 10 channels: GPIO11 - GPIO20
+            ESP32-C3 -> 5 channels: GPIO0 - GPIO4
             
+
+    config ADC_ATTENUATION
+        int "ADC Attenuation level"
+        range 0 3
+        default 1
+        help
+            0 = ADC_ATTEN_DB_0 No input attenuation Max 0,75V/0,95V
+            1 = ADC_ATTEN_DB_2_5 The input voltage of ADC will be attenuated extending the range of measurement by about 2.5 dB (1.33 x)
+            2 = ADC_ATTEN_DB_6 The input voltage of ADC will be attenuated extending the range of measurement by about 6 dB (2 x)
+            3 = ADC_ATTEN_DB_11 The input voltage of ADC will be attenuated extending the range of measurement by about 11 dB (3.55 x)
+
 endmenu
