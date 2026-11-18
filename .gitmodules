@@ -1,0 +1,4 @@
+[submodule "examples/common/esp_aht"]
+	path = examples/common/esp_aht
+	url = https://github.com/AramVartanyan/esp_aht
+	branch = main
