@@ -1,0 +1,92 @@
+menu "HAP Settings"
+
+    config USE_HARDCODED_SETUP_CODE
+        bool "Use hard-coded setup code"
+        default n
+        help
+            HomeKit does not recommend having the setup code programmed in the accessory as is.
+            Instead, it expects setup info (salt-verifier pair) generated for the given setup code.
+            Use this option only for testing purposes. For production, the setup info should be
+            used.
+            
+    config SETUP_CODE
+        string "HomeKit Setup Code"
+        default "320-10-000"
+        depends on USE_HARDCODED_SETUP_CODE
+        help
+            Setup code to be used for HomeKit pairing, if hard-coded setup code is enabled.
+
+    config SETUP_ID
+        string "HomeKit Setup Id"
+        default "ES32"
+        depends on USE_HARDCODED_SETUP_CODE
+        help
+            Setup id to be used for HomeKit pairing, if hard-coded setup code is enabled.
+
+    config MANIFACTURER
+        string "Device Manifacturer"
+        default "Armo Ltd."
+        help
+            Insert the name of the Device Manifacturer.
+            
+    config NAME
+        string "Device Name"
+        default "Dehum-%02X%02X%02X"
+        help
+            Insert the name of the Device.
+
+    config MODEL
+        string "Device Model"
+        default "HKBG Dehumidifier"
+        help
+            Insert the name of the Device Model.
+            
+    config HW
+        string "Device Hardware"
+        default "0.1.1"
+        help
+            Insert the revision of the Device Hardware.
+            
+    config RESET_GPIO
+        int "Reset Button GPIO number"
+        range 0 39
+        default 17
+        help
+            GPIO number for Button Input.
+            Some GPIOs are used for other purposes and cannot be used.
+
+    config LOCAL_ON_GPIO
+        int "Local On trigger GPIO number"
+        range 0 39
+        default 21
+        help
+            GPIO number for Button Input.
+            Some GPIOs are used for other purposes and cannot be used.
+
+    config LVL_SWITCH_GPIO
+        int "Water Level Switch GPIO number"
+        range 0 39
+        default 22
+        help
+            GPIO number for Button Input.
+            Some GPIOs are used for other purposes and cannot be used.
+
+    config LED_GPIO
+        int "LED GPIO number"
+        range 0 34
+        default 2
+        help
+            GPIO number for WiFi LED indicator.
+            Some GPIOs are used for other purposes and cannot be used.
+            GPIOs 35-39 are input-only so cannot be used as outputs.
+            
+    config RELAY_GPIO
+        int "Relay GPIO number"
+        range 0 34
+        default 25
+        help
+            GPIO number for Channel 1 Relay output.
+            Some GPIOs are used for other purposes and cannot be used.
+            GPIOs 35-39 are input-only so cannot be used as outputs.
+
+endmenu
