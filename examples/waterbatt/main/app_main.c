@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <freertos/timers.h>
@@ -87,6 +88,9 @@ int hap_keystore_get(const char *name_space, const char *key, uint8_t *val, size
 int hap_keystore_delete(const char *name_space, const char *key);
 void TemperatureSensorTask(void *_args);
 
+static TaskHandle_t SensorTaskHandle;   //the sensor task runs at most once
+static bool AhtReady;                   //ahtInit() done (the I2C bus is started only once)
+
 void TakeStatusConnected(bool status) {
     container.StatusConnected = status;
     OutputWrite(container.StatusConnected, CONFIG_LED_GPIO, false);
@@ -115,7 +119,9 @@ void otaStatus(void *p) {
     
     if (otaUpdateStatus == -1) {
         //update Failed
-        xTaskCreate(TemperatureSensorTask, "Temperature Sensor", 2*1024, NULL, 5, NULL);
+        if (!SensorTaskHandle) {
+            xTaskCreate(TemperatureSensorTask, "Temperature Sensor", 2*1024, NULL, 5, &SensorTaskHandle);
+        }
     } else {
         while (otaUpdateStatus) {
             ledFlash(1, 500);
@@ -174,7 +180,7 @@ static void fw_update_handler(void* arg)
         if (otaUpdateStatus != FW_UPG_STATUS_UPGRADING) {
             otaUpdate();
             vTaskDelay(500 / portTICK_PERIOD_MS);
-            xTaskCreate(otaStatus, "otaState", 1024, NULL, 3, NULL);
+            xTaskCreate(otaStatus, "otaState", 2*1024, NULL, 3, NULL);
         }
     }
 }
@@ -272,18 +278,27 @@ static void CreateValveTimer(void) {
 
 void TemperatureSensorTask(void *_args) {
 
-    int err = AhtSensorInitialization(AHT21);
-    ESP_LOGI(TAG, "AHT Sensor is %s", err ? "not initialized" : "initialized");
+    if (!AhtReady) {
+        AhtReady = ahtInit(AHT21) == ESP_OK;
+        ESP_LOGI(TAG, "AHT Sensor is %s", AhtReady ? "initialized" : "not initialized");
+    }
     
     while (!container.FirmwareUpdate) {
-        container.HumidityM = 10.0 * ReadHumidity();
-        ESP_LOGI(TAG, "Current Humidity %i", container.HumidityM);
-        container.TemperatureM = 10.0 * ReadTemperature();
-        ESP_LOGI(TAG, "Current Temperature %i", container.TemperatureM);
+        float Temperature;
+        uint8_t Humidity;
+        esp_err_t err = ahtRead(&Temperature, &Humidity);
+        if (err == ESP_OK) {
+            container.HumidityM = 10 * Humidity;
+            container.TemperatureM = (int16_t)lroundf(10.0f * Temperature);
+            ESP_LOGI(TAG, "Current Humidity %i, Temperature %i", container.HumidityM, container.TemperatureM);
+        } else {
+            ESP_LOGE(TAG, "AHT read error: %s", esp_err_to_name(err));   //the last values stay
+        }
         
         vTaskDelay(180000 / portTICK_PERIOD_MS);
     }
     
+    SensorTaskHandle = NULL;
     vTaskDelete(NULL);
 }
 
@@ -417,11 +432,11 @@ static int ValveWrite(hap_write_data_t write_data[], int count,
             container.SetDurationM = write->val.u;
             container.RemDurationM = container.SetDurationM;
             uint8_t duration = container.SetDurationM / 100;
-            ret = hap_keystore_set("water", "sduration", (uint8_t *)&duration, sizeof(uint8_t));
-            if (ret != HAP_SUCCESS) {
+            if (hap_keystore_set("water", "sduration", (uint8_t *)&duration, sizeof(uint8_t)) != HAP_SUCCESS) {
                 ESP_LOGE(TAG, "Could not write set duration.\n");
             }
             hap_char_update_val(write->hc, &(write->val));
+            *(write->status) = HAP_STATUS_SUCCESS;
         } else if (!strcmp(hap_char_get_type_uuid(write->hc), HAP_CHAR_CUSTOM_UUID_TROTA)) {
             ESP_LOGI(TAG, "The OTA update is %s", write->val.b ? "Triggered" : "Inactive");
             
@@ -687,7 +702,7 @@ static void acc_thread_entry(void *p)
     /* Start Wi-Fi */
     app_wifi_start(portMAX_DELAY);
     
-    xTaskCreate(TemperatureSensorTask, "Temperature Sensor", 2*1024, NULL, 5, NULL);
+    xTaskCreate(TemperatureSensorTask, "Temperature Sensor", 2*1024, NULL, 5, &SensorTaskHandle);
 
     /* The task ends here. The read/write callbacks will be invoked by the HAP Framework */
     vTaskDelete(NULL);

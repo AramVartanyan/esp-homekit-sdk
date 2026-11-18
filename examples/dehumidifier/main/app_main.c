@@ -162,23 +162,34 @@ void ReadHumidityTask(void *pvParameter) {
      */
     uint8_t UpdateDelay = 0;
     uint8_t NoSamples = 5;
-    float Humidity = 0;
+    uint8_t Value;
     
-    int err = AhtSensorInitialization(AHT21);
+    esp_err_t err = ahtInit(AHT21);
     ESP_LOGI(TAG, "AHT Sensor is %s", err ? "not initialized" : "initialized");
-    container.CurrentHumidityM = round(ReadHumidity()) + CAL_HUMIDITY;
+    if (ahtRead(NULL, &Value) == ESP_OK) {
+        container.CurrentHumidityM = Value + CAL_HUMIDITY;
+    }
     
     while (true) {
         UpdateDelay++;
         
+        //the average of the samples read without an error (the sum starts from 0 every time)
+        uint16_t Humidity = 0;
+        uint8_t Samples = 0;
         for (int i = 0; i < NoSamples; i++) {
-            Humidity += ReadHumidity();
+            if (ahtRead(NULL, &Value) == ESP_OK) {
+                Humidity += Value;
+                Samples++;
+            }
             vTaskDelay(1000 / portTICK_PERIOD_MS);
         }
-        Humidity /= NoSamples;
         
-        //ESP_LOGI(TAG, "Current Humidity %f", Humidity);
-        container.CurrentHumidityM = round(Humidity) + CAL_HUMIDITY;
+        if (Samples) {
+            //ESP_LOGI(TAG, "Current Humidity %u", (Humidity + Samples / 2) / Samples);
+            container.CurrentHumidityM = (Humidity + Samples / 2) / Samples + CAL_HUMIDITY;
+        } else {
+            ESP_LOGE(TAG, "AHT read error: the last humidity value stays");
+        }
         
         if (UpdateDelay > 119) {
             UpdateDelay = 0;
@@ -592,7 +603,7 @@ static int AccessoryRead(hap_char_t *hc, hap_status_t *status_code, void *serv_p
         hap_val_t UpdateStatus = {.i = otaUpdateStatus};
         ESP_LOGI(TAG, "Controller reads the Update status %d", UpdateStatus.i);
         hap_char_update_val(hc, &UpdateStatus);
-        *status = HAP_STATUS_SUCCESS;
+        *status_code = HAP_STATUS_SUCCESS;
     } else if (!strcmp(hap_char_get_type_uuid(hc), HAP_CHAR_CUSTOM_UUID_TROTA)) {
         const hap_val_t *cur_val = hap_char_get_val(hc);
         ESP_LOGI(TAG, "Currently the OTA is %s", cur_val->b ? "Triggered" : "Inactive");
