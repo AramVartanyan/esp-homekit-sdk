@@ -30,7 +30,6 @@
 #include <esp_event.h>
 #include <esp_log.h>
 #include <esp_idf_version.h>
-
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 1, 0)
 // Features supported in 4.1+
 #define ESP_NETIF_SUPPORTED
@@ -78,6 +77,7 @@
 static const char *TAG = "app_wifi";
 static const int WIFI_CONNECTED_EVENT = BIT0;
 static EventGroupHandle_t wifi_event_group;
+
 
 #ifdef USE_UNIFIED_PROVISIONING
 #define PROV_QR_VERSION "v1"
@@ -252,11 +252,11 @@ void app_wifi_init(const char *hostname)
 #else
     tcpip_adapter_init();
 #endif
-    
+
     /* Initialize the event loop */
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     wifi_event_group = xEventGroupCreate();
-    
+
     /* Initialize Wi-Fi including netif with default config */
 #ifdef ESP_NETIF_SUPPORTED
     esp_netif_t *wifi_netif = esp_netif_create_default_wifi_sta();
@@ -289,10 +289,10 @@ esp_err_t app_wifi_start(TickType_t ticks_to_wait)
             .ssid = APP_WIFI_SSID,
             .password = APP_WIFI_PASS,
             /* Setting a password implies station will connect to all security modes including WEP/WPA.
-             * However these modes are deprecated and not advisable to be used. Incase your Access point
+             * However these modes are deprecated and not advisable to be used. In case your Access point
              * doesn't support WPA2, these mode can be enabled by commenting below line */
-            .threshold.authmode = WIFI_AUTH_WPA2_PSK,
-            
+	     .threshold.authmode = WIFI_AUTH_WPA2_PSK,
+
             .pmf_cfg = {
                 .capable = true,
                 .required = false
