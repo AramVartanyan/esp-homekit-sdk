@@ -49,6 +49,8 @@ CONFIG_COMPILER_OPTIMIZATION_PERF=y
 
 CONFIG_AHT_SDA=33
 CONFIG_AHT_SCL=18
+# esp-homekit-sdk (esp_mfi_i2c.c) uses the legacy I2C driver: esp_aht must use it too
+CONFIG_AHT_I2C_LEGACY=y
 
 CONFIG_ADC_UNIT=0
 CONFIG_ADC_CHANNEL=2

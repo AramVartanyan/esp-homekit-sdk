@@ -54,3 +54,5 @@ CONFIG_LOG_DEFAULT_LEVEL_WARN=y
 
 CONFIG_AHT_SDA=19
 CONFIG_AHT_SCL=18
+# esp-homekit-sdk (esp_mfi_i2c.c) uses the legacy I2C driver: esp_aht must use it too
+CONFIG_AHT_I2C_LEGACY=y
